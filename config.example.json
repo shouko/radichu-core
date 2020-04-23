@@ -1,0 +1,5 @@
+{
+  "apiEndpoint": "https://example.jp/v2/api",
+  "headerPrefix": "X-MyAwesome-App-",
+  "appName": "aFeaturePhone7a"
+}
