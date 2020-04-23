@@ -77,8 +77,8 @@ const getTokenByStationId = async (stationId, defaultAreaId) => {
     transform,
   }).then(({ headers }) => ({
     authToken: headers[prependHeaderPrefix('authtoken', true)],
-    keyOffset: parseInt(prependHeaderPrefix('keyoffset', true), 10),
-    keyLength: parseInt(prependHeaderPrefix('keylength', true), 10),
+    keyOffset: parseInt(headers[prependHeaderPrefix('keyoffset', true)], 10),
+    keyLength: parseInt(headers[prependHeaderPrefix('keylength', true)], 10),
   })).then(({ authToken, keyOffset, keyLength }) => rp({
     uri: `${apiEndpoint}/auth2`,
     headers: {
