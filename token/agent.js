@@ -68,7 +68,7 @@ const getTokenByAreaId = async (areaId) => {
   });
 
   store.set(areaId, authToken);
-  return { areaId, authToken };
+  return authToken;
 };
 
 const getTokenByStationId = async (stationId, defaultAreaId) => {

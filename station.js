@@ -7,7 +7,7 @@ const areaToStations = {};
 const stations = {};
 
 const getStationAvailableAreas = async (stationId) => {
-  if (stations[stationId]) return stations[stationId];
+  if (stations[stationId]) return stations[stationId].areas;
   await Promise.all(areas.map((a) => a.id).map(async (areaId) => {
     const res = await rp(`${metadataEndpoint}/station/list/${areaId}.xml`);
     const { document } = new JSDOM(res).window;
