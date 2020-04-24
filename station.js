@@ -29,6 +29,7 @@ const getStationAvailableAreas = async (stationId) => {
       stations[sid].areas.push(areaId);
     });
   }));
+  if (!stations[stationId]) throw new Error('INVALID_STATION_ID');
   return stations[stationId].areas;
 };
 

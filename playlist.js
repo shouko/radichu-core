@@ -26,7 +26,24 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
 
 const getPlaylistApiUrl = (stationId, ft, to) => `${config.get('apiEndpoint')}/ts/playlist.m3u8?station_id=${stationId}&ft=${ft}&to=${to}`;
 
+const validTimecode = (t) => {
+  const trgx = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/;
+  const res = trgx.exec(t);
+  if (!res) return false;
+  const [, Y, M, D, h, m, s] = res;
+  if (new Date(`${Y}/${M}/${D} ${h}:${m}:${s}+09:00`) > Date.now()) return false;
+  return true;
+};
+
 const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
+  if (
+    ft >= to
+    || !validTimecode(ft)
+    || !validTimecode(to)
+  ) {
+    throw new Error('INVALID_TIMECODE');
+  }
+
   const {
     areaId,
     authToken,
