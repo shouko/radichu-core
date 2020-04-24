@@ -2,6 +2,7 @@ const rp = require('request-promise');
 const { getRandomElement } = require('./utils');
 const { getRandomClient, getLocation } = require('./identity');
 const partialKey = require('./partialKey');
+const tokenStore = require('./tokenStore');
 
 const {
   apiEndpoint,
@@ -26,26 +27,8 @@ const addHeaderPrefix = (headers) => {
   return Object.fromEntries(prefixed);
 };
 
-const tokenCache = {};
-
-const getCachedToken = (areaId) => {
-  if (!tokenCache[areaId]) return false;
-  if (tokenCache[areaId].expires < Date.now()) {
-    delete tokenCache[areaId];
-    return false;
-  }
-  return tokenCache[areaId].authToken;
-};
-
-const setCachedToken = (areaId, authToken) => {
-  tokenCache[areaId] = {
-    authToken,
-    expires: Date.now() + 42e5,
-  };
-};
-
 const getTokenByAreaId = async (areaId) => {
-  const cached = getCachedToken(areaId);
+  const cached = tokenStore.get(areaId);
   if (cached) return cached;
 
   const {
@@ -97,14 +80,14 @@ const getTokenByAreaId = async (areaId) => {
     },
   });
 
-  setCachedToken(areaId, authToken);
+  tokenStore.set(areaId, authToken);
   return { areaId, authToken };
 };
 
 const getTokenByStationId = async (stationId, defaultAreaId) => {
   const availableAreas = getStationAvailableAreas(stationId);
   const cachedAreas = availableAreas.filter((a) => {
-    const cached = getCachedToken(a);
+    const cached = tokenStore.get(a);
     if (!cached) return false;
     return true;
   });
@@ -113,7 +96,7 @@ const getTokenByStationId = async (stationId, defaultAreaId) => {
     const areaId = cachedAreas.includes(defaultAreaId) ? defaultAreaId : cachedAreas[0];
     return {
       areaId,
-      authToken: getCachedToken(areaId),
+      authToken: tokenStore.get(areaId),
     };
   }
 
