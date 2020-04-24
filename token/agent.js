@@ -92,7 +92,8 @@ const getTokenByStationId = async (stationId, defaultAreaId) => {
     };
   }
 
-  const areaId = getRandomElement(availableAreas);
+  const areaId = availableAreas.includes(defaultAreaId)
+    ? defaultAreaId : getRandomElement(availableAreas);
   return {
     areaId,
     authToken: await getTokenByAreaId(areaId),
