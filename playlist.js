@@ -2,6 +2,7 @@ const rp = require('request-promise');
 const { addHeaderPrefix } = require('./utils');
 const { getTokenByStationId } = require('./token/agent');
 const config = require('./config');
+const httpsAgent = require('./httpsAgent');
 
 const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
   const playlistHeaders = addHeaderPrefix({
@@ -12,12 +13,14 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
   const metaPlaylist = await rp({
     uri: playlistApiUrl,
     headers: playlistHeaders,
+    pool: httpsAgent,
   });
 
   const playlistUrl = metaPlaylist.split('\n').find((line) => line[0] !== '#' && !!line.trim());
   return rp({
     uri: playlistUrl,
     headers: playlistHeaders,
+    pool: httpsAgent,
   });
 };
 

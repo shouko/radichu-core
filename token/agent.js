@@ -9,6 +9,7 @@ const config = require('../config');
 const partialKey = require('./partialKey');
 const store = require('./store');
 const { getStationAvailableAreas } = require('../station');
+const httpsAgent = require('../httpsAgent');
 
 const getTokenByAreaId = async (areaId) => {
   const cached = store.get(areaId);
@@ -43,6 +44,7 @@ const getTokenByAreaId = async (areaId) => {
     uri: `${apiEndpoint}/auth1`,
     headers: commonHeaders,
     transform,
+    pool: httpsAgent,
   });
 
   const [authToken, keyOffset, keyLength] = [
@@ -64,6 +66,7 @@ const getTokenByAreaId = async (areaId) => {
       ...commonHeaders,
       ...requestHeaders,
     },
+    pool: httpsAgent,
   });
 
   store.set(areaId, authToken);
