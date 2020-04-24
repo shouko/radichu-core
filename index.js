@@ -113,16 +113,16 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
     AuthToken: authToken,
   });
 
-  return rp({
+  const metaPlaylist = await rp({
     uri: playlistApiUrl,
     headers: playlistHeaders,
-  }).then((body) => {
-    const metaPlaylist = body.split('\n').find((line) => line[0] !== '#' && !!line.trim());
-    return rp({
-      uri: metaPlaylist,
-      headers: playlistHeaders,
-    });
-  }).then((playlistBody) => playlistBody);
+  });
+
+  const playlistUrl = metaPlaylist.split('\n').find((line) => line[0] !== '#' && !!line.trim());
+  return rp({
+    uri: playlistUrl,
+    headers: playlistHeaders,
+  });
 };
 
 const getPlaylistApiUrl = (stationId, ft, to) => `${apiEndpoint}/ts/playlist.m3u8?station_id=${stationId}&ft=${ft}&to=${to}`;
