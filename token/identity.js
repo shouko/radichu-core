@@ -1,6 +1,6 @@
-const { OS_VERSION_MAP, MODEL_LIST, APP_VERSION_LIST } = require('./constants/devices');
-const areas = require('./constants/areas');
-const { getRandomElement } = require('./utils');
+const { OS_VERSION_MAP, MODEL_LIST, APP_VERSION_LIST } = require('../constants/devices');
+const areas = require('../constants/areas');
+const { getRandomElement } = require('../utils');
 
 const getRandomClient = () => {
   const osVersion = getRandomElement(Object.keys(OS_VERSION_MAP));
