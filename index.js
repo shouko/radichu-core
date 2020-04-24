@@ -1,12 +1,15 @@
 const rp = require('request-promise');
-const { getRandomElement } = require('./utils');
+const {
+  getRandomElement,
+  addHeaderPrefix,
+  prependHeaderPrefix,
+} = require('./utils');
 const { getRandomClient, getLocation } = require('./identity');
 const partialKey = require('./partialKey');
 const tokenStore = require('./tokenStore');
 
 const {
   apiEndpoint,
-  headerPrefix,
   appName,
 } = require('./config.json');
 
@@ -14,17 +17,6 @@ const getStationAvailableAreas = (stationId) => {
   // TODO: station <--> areas
   const availableAreas = {};
   return availableAreas[stationId];
-};
-
-const prependHeaderPrefix = (key, isLower) => {
-  const prefix = isLower ? headerPrefix.toLowerCase() : headerPrefix;
-  return `${prefix}${key}`;
-};
-
-const addHeaderPrefix = (headers) => {
-  const entries = Object.entries(headers);
-  const prefixed = entries.map(([key, val]) => [prependHeaderPrefix(key), val]);
-  return Object.fromEntries(prefixed);
 };
 
 const getTokenByAreaId = async (areaId) => {
