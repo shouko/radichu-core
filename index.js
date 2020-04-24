@@ -28,7 +28,7 @@ const addHeaderPrefix = (headers) => {
 
 const tokenCache = {};
 
-const getCachedTokenByAreaId = (areaId) => {
+const getCachedToken = (areaId) => {
   if (!tokenCache[areaId]) return false;
   if (tokenCache[areaId].expires < Date.now()) {
     delete tokenCache[areaId];
@@ -37,8 +37,15 @@ const getCachedTokenByAreaId = (areaId) => {
   return tokenCache[areaId].authToken;
 };
 
+const setCachedToken = (areaId, authToken) => {
+  tokenCache[areaId] = {
+    authToken,
+    expires: Date.now() + 42e5,
+  };
+};
+
 const getTokenByAreaId = async (areaId) => {
-  const cached = getCachedTokenByAreaId(areaId);
+  const cached = getCachedToken(areaId);
   if (cached) return cached;
 
   const {
@@ -63,38 +70,41 @@ const getTokenByAreaId = async (areaId) => {
     body,
   });
 
-  return rp({
+  const { headers } = await rp({
     uri: `${apiEndpoint}/auth1`,
     headers: commonHeaders,
     transform,
-  }).then(({ headers }) => ({
-    authToken: headers[prependHeaderPrefix('authtoken', true)],
-    keyOffset: parseInt(headers[prependHeaderPrefix('keyoffset', true)], 10),
-    keyLength: parseInt(headers[prependHeaderPrefix('keylength', true)], 10),
-  })).then(({ authToken, keyOffset, keyLength }) => rp({
+  });
+
+  const [authToken, keyOffset, keyLength] = [
+    headers[prependHeaderPrefix('authtoken', true)],
+    parseInt(headers[prependHeaderPrefix('keyoffset', true)], 10),
+    parseInt(headers[prependHeaderPrefix('keylength', true)], 10),
+  ];
+
+  const requestHeaders = addHeaderPrefix({
+    AuthToken: authToken,
+    Location: getLocation(areaId),
+    Connection: 'wifi',
+    Partialkey: partialKey(keyOffset, keyLength),
+  });
+
+  await rp({
     uri: `${apiEndpoint}/auth2`,
     headers: {
       ...commonHeaders,
-      ...addHeaderPrefix({
-        AuthToken: authToken,
-        Location: getLocation(areaId),
-        Connection: 'wifi',
-        Partialkey: partialKey(keyOffset, keyLength),
-      }),
+      ...requestHeaders,
     },
-  }).then(() => {
-    tokenCache[areaId] = {
-      authToken,
-      expires: Date.now() + 42e5,
-    };
-    return { authToken };
-  }));
+  });
+
+  setCachedToken(areaId, authToken);
+  return { areaId, authToken };
 };
 
 const getTokenByStationId = async (stationId, defaultAreaId) => {
   const availableAreas = getStationAvailableAreas(stationId);
   const cachedAreas = availableAreas.filter((a) => {
-    const cached = getCachedTokenByAreaId(a);
+    const cached = getCachedToken(a);
     if (!cached) return false;
     return true;
   });
@@ -102,15 +112,15 @@ const getTokenByStationId = async (stationId, defaultAreaId) => {
   if (cachedAreas.length > 0) {
     const areaId = cachedAreas.includes(defaultAreaId) ? defaultAreaId : cachedAreas[0];
     return {
-      authToken: getCachedTokenByAreaId(areaId),
       areaId,
+      authToken: getCachedToken(areaId),
     };
   }
 
   const areaId = getRandomElement(availableAreas);
   return {
-    authToken: await getTokenByAreaId(areaId),
     areaId,
+    authToken: await getTokenByAreaId(areaId),
   };
 };
 
@@ -136,8 +146,8 @@ const getPlaylistApiUrl = (stationId, ft, to) => `${apiEndpoint}/ts/playlist.m3u
 
 const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
   const {
-    authToken,
     areaId,
+    authToken,
   } = await getTokenByStationId(stationId, defaultAreaId);
 
   return fetchRealPlaylist(getPlaylistApiUrl(stationId, ft, to), authToken, areaId);
