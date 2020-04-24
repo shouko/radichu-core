@@ -105,7 +105,7 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
     AuthToken: authToken,
   });
 
-  await rp({
+  return rp({
     uri: playlistApiUrl,
     headers: playlistHeaders,
   }).then((body) => {
