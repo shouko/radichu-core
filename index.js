@@ -28,27 +28,19 @@ const addHeaderPrefix = (headers) => {
 
 const tokenCache = {};
 
-const getTokenByStationId = async (stationId, defaultAreaId) => {
-  const availableAreas = getStationAvailableAreas(stationId);
-  const cachedAreas = availableAreas.filter((a) => {
-    const cached = tokenCache[a];
-    if (!cached) return false;
-    if (Date.now() > cached.expires) {
-      delete tokenCache[a];
-      return false;
-    }
-    return true;
-  });
-
-  if (cachedAreas.length > 0) {
-    const selectedArea = cachedAreas.includes(defaultAreaId) ? defaultAreaId : cachedAreas[0];
-    return {
-      authToken: tokenCache[selectedArea].authToken,
-      selectedArea,
-    };
+const getCachedTokenByAreaId = (areaId) => {
+  if (!tokenCache[areaId]) return false;
+  if (tokenCache[areaId].expires < Date.now()) {
+    delete tokenCache[areaId];
+    return false;
   }
+  return tokenCache[areaId].authToken;
+};
 
-  const selectedArea = getRandomElement(availableAreas);
+const getTokenByAreaId = async (areaId) => {
+  const cached = getCachedTokenByAreaId(areaId);
+  if (cached) return cached;
+
   const {
     appVersion,
     userId,
@@ -85,18 +77,41 @@ const getTokenByStationId = async (stationId, defaultAreaId) => {
       ...commonHeaders,
       ...addHeaderPrefix({
         AuthToken: authToken,
-        Location: getLocation(selectedArea),
+        Location: getLocation(areaId),
         Connection: 'wifi',
         Partialkey: partialKey(keyOffset, keyLength),
       }),
     },
   }).then(() => {
-    tokenCache[selectedArea] = {
-      token: authToken,
+    tokenCache[areaId] = {
+      authToken,
       expires: Date.now() + 42e5,
     };
-    return { authToken, selectedArea };
+    return { authToken };
   }));
+};
+
+const getTokenByStationId = async (stationId, defaultAreaId) => {
+  const availableAreas = getStationAvailableAreas(stationId);
+  const cachedAreas = availableAreas.filter((a) => {
+    const cached = getCachedTokenByAreaId(a);
+    if (!cached) return false;
+    return true;
+  });
+
+  if (cachedAreas.length > 0) {
+    const areaId = cachedAreas.includes(defaultAreaId) ? defaultAreaId : cachedAreas[0];
+    return {
+      authToken: getCachedTokenByAreaId(areaId),
+      areaId,
+    };
+  }
+
+  const areaId = getRandomElement(availableAreas);
+  return {
+    authToken: await getTokenByAreaId(areaId),
+    areaId,
+  };
 };
 
 const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
@@ -122,10 +137,10 @@ const getPlaylistApiUrl = (stationId, ft, to) => `${apiEndpoint}/ts/playlist.m3u
 const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
   const {
     authToken,
-    selectedArea,
+    areaId,
   } = await getTokenByStationId(stationId, defaultAreaId);
 
-  return fetchRealPlaylist(getPlaylistApiUrl(stationId, ft, to), authToken, selectedArea);
+  return fetchRealPlaylist(getPlaylistApiUrl(stationId, ft, to), authToken, areaId);
 };
 
 module.exports = {
