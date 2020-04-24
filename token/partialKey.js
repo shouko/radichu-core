@@ -1,6 +1,12 @@
 const atob = require('atob');
 const btoa = require('btoa');
+const config = require('../config');
 
-const key = atob(require('../constants/fullKey.json'));
+let key = null;
 
-module.exports = (offset, length) => btoa(key.slice(offset, offset + length));
+module.exports = (offset, length) => {
+  if (!key) {
+    key = atob(config.get('fullKey'));
+  }
+  return btoa(key.slice(offset, offset + length));
+};

@@ -5,14 +5,10 @@ const {
   prependHeaderPrefix,
 } = require('../utils');
 const { getRandomClient, getLocation } = require('./identity');
+const config = require('../config');
 const partialKey = require('./partialKey');
 const store = require('./store');
 const { getStationAvailableAreas } = require('../station');
-
-const {
-  apiEndpoint,
-  appName,
-} = require('../config.json');
 
 const getTokenByAreaId = async (areaId) => {
   const cached = store.get(areaId);
@@ -24,6 +20,9 @@ const getTokenByAreaId = async (areaId) => {
     userAgent,
     device,
   } = getRandomClient();
+
+  const appName = config.get('appName');
+  const apiEndpoint = config.get('apiEndpoint');
 
   const commonHeaders = {
     'User-Agent': userAgent,

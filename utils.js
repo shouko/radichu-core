@@ -1,8 +1,9 @@
-const { headerPrefix } = require('./config.json');
+const config = require('./config');
 
 const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const prependHeaderPrefix = (key, isLower) => {
+  const headerPrefix = config.get('headerPrefix');
   const prefix = isLower ? headerPrefix.toLowerCase() : headerPrefix;
   return `${prefix}${key}`;
 };
