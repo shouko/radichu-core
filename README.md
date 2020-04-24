@@ -5,9 +5,9 @@ Core of Radichu
 ## Usage
 
 ```js
-const rcore = require('radichu-core');
+const radichuCore = require('radichu-core');
 
-rcore.configure({
+radichuCore.configure({
   "apiEndpoint": "https://example.jp/v2/api",
   "metadataEndpoint": "https://example.jp/v3",
   "headerPrefix": "X-MyAwesome-App-",
