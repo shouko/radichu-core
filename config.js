@@ -13,7 +13,7 @@ const set = (k, v) => {
   }
 };
 
-module.export = {
+module.exports = {
   get,
   set,
 };

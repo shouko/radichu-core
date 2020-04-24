@@ -1,7 +1,7 @@
-const { getPlaylist } = require('./playlist');
+const { fetchPlaylist } = require('./playlist');
 const config = require('./config');
 
 module.exports = {
-  getPlaylist,
+  fetchPlaylist,
   configure: config.set,
 };
