@@ -26,20 +26,21 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
 
 const getPlaylistApiUrl = (stationId, ft, to) => `${config.get('apiEndpoint')}/ts/playlist.m3u8?station_id=${stationId}&ft=${ft}&to=${to}`;
 
-const validTimecode = (t) => {
-  const trgx = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/;
+const formatTimecode = (t) => {
+  const trgx = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?$/;
   const res = trgx.exec(t);
   if (!res) return false;
-  const [, Y, M, D, h, m, s] = res;
-  if (new Date(`${Y}/${M}/${D} ${h}:${m}:${s}+09:00`) > Date.now()) return false;
-  return true;
+  const [, Y, M, D, H, m, s] = res.map((e) => e || '00');
+  const d = new Date(`${Y}/${M}/${D} ${H}:${m}:${s}+09:00`);
+  if (Number.isNaN(d.getTime()) || d > Date.now()) return false;
+  return `${Y}${M}${D}${H}${m}${s}`;
 };
 
 const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
+  const tcFrom = formatTimecode(ft);
+  const tcTo = formatTimecode(to);
   if (
-    ft >= to
-    || !validTimecode(ft)
-    || !validTimecode(to)
+    !tcFrom || !tcTo || tcFrom >= tcTo
   ) {
     throw new Error('INVALID_TIMECODE');
   }
