@@ -26,6 +26,8 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
 
 const getPlaylistApiUrl = (stationId, ft, to) => `${config.get('apiEndpoint')}/ts/playlist.m3u8?station_id=${stationId}&ft=${ft}&to=${to}`;
 
+const getLivePlaylistApiUrl = (stationId) => `${config.get('liveEndpoint')}/${stationId}/_definst_/simul-stream.stream/playlist.m3u8`;
+
 const formatTimecode = (t) => {
   const trgx = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?$/;
   const res = trgx.exec(t);
@@ -37,12 +39,15 @@ const formatTimecode = (t) => {
 };
 
 const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
-  const tcFrom = formatTimecode(ft);
-  const tcTo = formatTimecode(to);
-  if (
-    !tcFrom || !tcTo || tcFrom >= tcTo
-  ) {
-    throw new Error('INVALID_TIMECODE');
+  const isLive = !ft && !to;
+  if (!isLive) {
+    const tcFrom = formatTimecode(ft);
+    const tcTo = formatTimecode(to);
+    if (
+      !tcFrom || !tcTo || tcFrom >= tcTo
+    ) {
+      throw new Error('INVALID_TIMECODE');
+    }
   }
 
   const {
@@ -50,7 +55,9 @@ const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
     authToken,
   } = await getTokenByStationId(stationId, defaultAreaId);
 
-  return fetchRealPlaylist(getPlaylistApiUrl(stationId, ft, to), authToken, areaId);
+  const playlistApiUrl = isLive
+    ? getLivePlaylistApiUrl(stationId) : getPlaylistApiUrl(stationId, ft, to);
+  return fetchRealPlaylist(playlistApiUrl, authToken, areaId);
 };
 
 module.exports = {
