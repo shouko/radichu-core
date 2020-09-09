@@ -3,22 +3,48 @@ const { addHeaderPrefix } = require('./utils');
 const { getTokenByStationId } = require('./token/agent');
 const config = require('./config');
 const httpsAgent = require('./httpsAgent');
+const { getRandomClient } = require('./token/identity');
 
-const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
+const liveLength = 15;
+const liveSessions = new Map();
+
+const setLiveSession = (key, url) => {
+  if (!key) return false;
+  return liveSessions.set(key, {
+    url,
+    expires: Date.now() + liveLength * 2 * 1000,
+  });
+};
+
+const getLiveSession = (key) => {
+  if (!key) return false;
+  const session = liveSessions.get(key);
+  if (!session || session.expires < Date.now()) {
+    return false;
+  }
+  return session.url;
+};
+
+const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId, sessionCacheKey) => {
   const playlistHeaders = addHeaderPrefix({
     AreaId: areaId,
     AuthToken: authToken,
   });
 
-  const metaPlaylist = await rp({
-    uri: playlistApiUrl,
-    headers: playlistHeaders,
-    pool: httpsAgent,
-  });
+  let realPlaylistUrl = getLiveSession(sessionCacheKey);
 
-  const playlistUrl = metaPlaylist.split('\n').find((line) => line[0] !== '#' && !!line.trim());
+  if (!realPlaylistUrl) {
+    const metaPlaylist = await rp({
+      uri: playlistApiUrl,
+      headers: playlistHeaders,
+      pool: httpsAgent,
+    });
+    realPlaylistUrl = metaPlaylist.split('\n').find((line) => line[0] !== '#' && !!line.trim());
+    setLiveSession(sessionCacheKey, realPlaylistUrl);
+  }
+
   return rp({
-    uri: playlistUrl,
+    uri: realPlaylistUrl,
     headers: playlistHeaders,
     pool: httpsAgent,
   });
@@ -26,7 +52,7 @@ const fetchRealPlaylist = async (playlistApiUrl, authToken, areaId) => {
 
 const getPlaylistApiUrl = (stationId, ft, to) => `${config.get('apiEndpoint')}/ts/playlist.m3u8?station_id=${stationId}&ft=${ft}&to=${to}`;
 
-const getLivePlaylistApiUrl = (stationId) => `${config.get('liveEndpoint')}/${stationId}/_definst_/simul-stream.stream/playlist.m3u8`;
+const getLivePlaylistApiUrl = (stationId) => `${config.get('liveEndpoint')}/so/playlist.m3u8?station_id=${stationId}&l=${liveLength}&lsid=${getRandomClient().userId}&type=b`;
 
 const formatTimecode = (t) => {
   const trgx = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})?$/;
@@ -57,7 +83,7 @@ const fetchPlaylist = async (stationId, ft, to, defaultAreaId) => {
 
   const playlistApiUrl = isLive
     ? getLivePlaylistApiUrl(stationId) : getPlaylistApiUrl(stationId, ft, to);
-  return fetchRealPlaylist(playlistApiUrl, authToken, areaId);
+  return fetchRealPlaylist(playlistApiUrl, authToken, areaId, isLive ? stationId : null);
 };
 
 module.exports = {
