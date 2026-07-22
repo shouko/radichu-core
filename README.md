@@ -2,10 +2,6 @@
 
 Core of Radichu
 
-Requires Node.js 24 or newer.
-
-Live and time-shift playback use the same `fetchPlaylist` API. Time-shift ranges are assembled from the upstream 300-second playlists and returned as one M3U8 document.
-
 ## Usage
 
 ```js
