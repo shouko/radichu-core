@@ -1,4 +1,4 @@
-const { JSDOM } = require('jsdom');
+const { DOMParser } = require('@xmldom/xmldom');
 const { addHeaderPrefix } = require('./utils');
 const { getTokenByStationId } = require('./token/agent');
 const config = require('./config');
@@ -97,8 +97,12 @@ const getTimeShiftSeeks = (from, to) => {
 const getTimeShiftPlaylistUrl = async (stationId) => {
   const endpoint = `${config.get('metadataEndpoint')}/station/stream/pc_html5/${stationId}.xml`;
   const xml = await fetchText(endpoint);
-  const { document } = new JSDOM(xml, { contentType: 'text/xml' }).window;
-  const url = document.querySelector('url[timefree="1"][areafree="0"] playlist_create_url');
+  const document = new DOMParser().parseFromString(xml, 'text/xml');
+  const url = [
+    ...document.getElementsByTagName('playlist_create_url')
+  ].find(({ parentNode }) => {
+    return parentNode.getAttribute('areafree') == '0' && parentNode.getAttribute('timefree') == '1';
+  });
   if (!url || !url.textContent.trim()) throw new Error('TIMESHIFT_URL_NOT_FOUND');
   return url.textContent.trim();
 };
