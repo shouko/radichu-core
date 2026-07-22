@@ -99,10 +99,11 @@ const getTimeShiftPlaylistUrl = async (stationId) => {
   const xml = await fetchText(endpoint);
   const document = new DOMParser().parseFromString(xml, 'text/xml');
   const url = [
-    ...document.getElementsByTagName('playlist_create_url')
-  ].find(({ parentNode }) => {
-    return parentNode.getAttribute('areafree') == '0' && parentNode.getAttribute('timefree') == '1';
-  });
+    ...document.getElementsByTagName('playlist_create_url'),
+  ].find(({ parentNode }) => (
+    parentNode.getAttribute('areafree') === '0'
+    && parentNode.getAttribute('timefree') === '1'
+  ));
   if (!url || !url.textContent.trim()) throw new Error('TIMESHIFT_URL_NOT_FOUND');
   return url.textContent.trim();
 };
@@ -159,15 +160,12 @@ const fetchTimeShiftPlaylist = async (stationId, from, to, authToken, areaId) =>
   const playlists = [];
 
   // Keep chunk creation sequential to avoid bursting the upstream service.
-  // eslint-disable-next-line no-restricted-syntax
   for (const seek of getTimeShiftSeeks(from, to)) {
     const apiUrl = getTimeShiftPlaylistApiUrl(
       baseUrl, stationId, from.value, to.value, seek, sessionId,
     );
-    // eslint-disable-next-line no-await-in-loop
     const metaPlaylist = await fetchText(apiUrl, { headers });
     const playlistUrl = getPlaylistUrl(metaPlaylist, apiUrl);
-    // eslint-disable-next-line no-await-in-loop
     const playlist = await fetchText(playlistUrl);
     playlists.push(resolvePlaylistUrls(playlist, playlistUrl));
   }

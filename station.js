@@ -11,9 +11,9 @@ const buildMappings = async () => Promise.all(areas.map((a) => a.id).map(async (
     `${config.get('metadataEndpoint')}/station/list/${areaId}.xml`,
   );
   const document = new DOMParser().parseFromString(res, 'text/xml');
-  const stationIds = [...document.getElementsByTagName('station')].map(s => {
-    const id = [...s.children].find(({tagName}) => tagName === 'id');
-    return id?.textContent.trim();
+  const stationIds = [...document.getElementsByTagName('station')].map((station) => {
+    const id = [...station.children].find(({ tagName }) => tagName === 'id');
+    return id ? id.textContent.trim() : undefined;
   }).filter(Boolean);
 
   stationIds.forEach((sid) => {
