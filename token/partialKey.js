@@ -1,12 +1,10 @@
-const atob = require('atob');
-const btoa = require('btoa');
 const config = require('../config');
 
 let key = null;
 
 module.exports = (offset, length) => {
   if (!key) {
-    key = atob(config.get('fullKey'));
+    key = Buffer.from(config.get('fullKey'), 'base64');
   }
-  return btoa(key.slice(offset, offset + length));
+  return key.subarray(offset, offset + length).toString('base64');
 };

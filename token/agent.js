@@ -1,4 +1,3 @@
-const rp = require('request-promise');
 const {
   getRandomElement,
   addHeaderPrefix,
@@ -9,7 +8,7 @@ const config = require('../config');
 const partialKey = require('./partialKey');
 const store = require('./store');
 const { getStationAvailableAreas } = require('../station');
-const httpsAgent = require('../httpsAgent');
+const { fetchText } = require('../http');
 
 const getTokenByAreaId = async (areaId) => {
   const cached = store.get(areaId);
@@ -35,22 +34,19 @@ const getTokenByAreaId = async (areaId) => {
     }),
   };
 
-  const transform = (body, response) => ({
-    headers: response.headers,
-    body,
-  });
-
-  const { headers } = await rp({
-    uri: `${apiEndpoint}/auth1`,
+  const auth1 = await fetch(`${apiEndpoint}/auth1`, {
     headers: commonHeaders,
-    transform,
-    pool: httpsAgent,
   });
+  if (!auth1.ok) {
+    const error = new Error(`HTTP_${auth1.status}`);
+    error.status = auth1.status;
+    throw error;
+  }
 
   const [authToken, keyOffset, keyLength] = [
-    headers[prependHeaderPrefix('authtoken', true)],
-    parseInt(headers[prependHeaderPrefix('keyoffset', true)], 10),
-    parseInt(headers[prependHeaderPrefix('keylength', true)], 10),
+    auth1.headers.get(prependHeaderPrefix('authtoken', true)),
+    parseInt(auth1.headers.get(prependHeaderPrefix('keyoffset', true)), 10),
+    parseInt(auth1.headers.get(prependHeaderPrefix('keylength', true)), 10),
   ];
 
   const requestHeaders = addHeaderPrefix({
@@ -60,13 +56,11 @@ const getTokenByAreaId = async (areaId) => {
     Partialkey: partialKey(keyOffset, keyLength),
   });
 
-  await rp({
-    uri: `${apiEndpoint}/auth2`,
+  await fetchText(`${apiEndpoint}/auth2`, {
     headers: {
       ...commonHeaders,
       ...requestHeaders,
     },
-    pool: httpsAgent,
   });
 
   store.set(areaId, authToken);
